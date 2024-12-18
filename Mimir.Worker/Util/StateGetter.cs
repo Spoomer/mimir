@@ -1,7 +1,6 @@
 using Bencodex.Types;
 using Lib9c.Models.Arena;
 using Lib9c.Models.Items;
-using Lib9c.Models.Market;
 using Lib9c.Models.States;
 using Libplanet.Crypto;
 using Mimir.Worker.Exceptions;
@@ -10,6 +9,8 @@ using Nekoyume;
 using Nekoyume.Action;
 using Nekoyume.Model.EnumType;
 using Nekoyume.TableData;
+using Product = Lib9c.Models.Market.Product;
+using ProductsState = Lib9c.Models.Market.ProductsState;
 
 namespace Mimir.Worker.Util;
 

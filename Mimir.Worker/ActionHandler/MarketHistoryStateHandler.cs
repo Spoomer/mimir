@@ -20,7 +20,7 @@ public class MarketHistoryStateHandler(
     IHeadlessGQLClient headlessGqlClient,
     IInitializerManager initializerManager
 )
-    : BaseActionHandler<ProductDocument>(
+    : BaseActionHandler<ProductReceiptDocument>(
         stateService,
         store,
         headlessGqlClient,

@@ -30,6 +30,7 @@ public static class HostApplicationBuilderExtensions
                 builder.Services.AddBackgroundService<TableSheetStateHandler>();
                 builder.Services.AddBackgroundService<WorldBossKillRewardRecordStateHandler>();
                 builder.Services.AddBackgroundService<WorldBossStateHandler>();
+                builder.Services.AddBackgroundService<MarketHistoryStateHandler>();
                 break;
             case PollerType.DiffPoller:
                 builder.Services.AddBackgroundService<ActionPointStateHandler>();
@@ -69,8 +70,9 @@ public static class HostApplicationBuilderExtensions
         )
         {
             builder.Services.AddBackgroundService<TableSheetInitializer>();
-
-            builder.Services.AddSingleton<IInitializerManager, DefaultInitializerManager>();
+            // builder.Services.AddBackgroundService<ArenaInitializer>();
+            
+            builder.Services.AddSingleton<IInitializerManager, TableSheetInitializerManager>();   
         }
         else
         {

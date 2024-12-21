@@ -75,18 +75,23 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
         await initializerManager.WaitInitializers(stoppingToken);
 
         var collectionName = CollectionNames.GetCollectionName<TMimirBsonDocument>();
+        // 'currentBlockIndex' means the tip block index of the network.
+        long? currentBlockIndex = null;
+        // Retrieve ArenaScore Block Index. Ensure BlockPoller saves the same block index for all collections.
+        long? syncedBlockIndex = null;
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            // 'currentBlockIndex' means the tip block index of the network.
-            long? currentBlockIndex = null;
-            // Retrieve ArenaScore Block Index. Ensure BlockPoller saves the same block index for all collections.
-            long? syncedBlockIndex = null;
             long? indexDifference = null;
+
             try
             {
-                currentBlockIndex = await StateService.GetLatestIndex(stoppingToken);
                 syncedBlockIndex = await GetSyncedBlockIndex(collectionName, stoppingToken);
+
+                if (currentBlockIndex is null || syncedBlockIndex >= currentBlockIndex - 1)
+                {
+                    currentBlockIndex = await StateService.GetLatestIndex(stoppingToken);
+                }
 
                 Logger.Information(
                     "Check BlockIndex synced: {SyncedBlockIndex}, current: {CurrentBlockIndex}",
@@ -103,7 +108,7 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
 
                 if (targetBlockIndex > maxFetchableBlockIndex)
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(1000), stoppingToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(5000), stoppingToken);
                     continue;
                 }
 

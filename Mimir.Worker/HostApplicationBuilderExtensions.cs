@@ -14,18 +14,8 @@ public static class HostApplicationBuilderExtensions
         if (builder.Configuration.GetSection("Configuration").GetValue<PollerType>("PollerType") is { } pollerType &&
             pollerType == PollerType.TxPoller)
         {
-            builder.Services.AddBackgroundService<ArenaStateHandler>();
-            builder.Services.AddBackgroundService<ItemSlotStateHandler>();
-            builder.Services.AddBackgroundService<PetStateHandler>();
-            builder.Services.AddBackgroundService<PledgeStateHandler>();
-            builder.Services.AddBackgroundService<PledgeStateHandler>();
-            builder.Services.AddBackgroundService<ProductsStateHandler>();
-            builder.Services.AddBackgroundService<ProductStateHandler>();
-            builder.Services.AddBackgroundService<RaiderStateHandler>();
-            builder.Services.AddBackgroundService<StakeStateHandler>();
-            builder.Services.AddBackgroundService<TableSheetStateHandler>();
-            builder.Services.AddBackgroundService<WorldBossKillRewardRecordStateHandler>();
-            builder.Services.AddBackgroundService<WorldBossStateHandler>();
+            builder.Services.AddBackgroundService<MarketHistoryStateHandler>();
+            // builder.Services.AddBackgroundService<ProductStateHandler>();
         }
         else
         {
@@ -60,9 +50,9 @@ public static class HostApplicationBuilderExtensions
         if (builder.Configuration.GetSection("Configuration").GetValue<bool?>("EnableInitializing") is true)
         {
             builder.Services.AddBackgroundService<TableSheetInitializer>();
-            builder.Services.AddBackgroundService<ArenaInitializer>();
+            // builder.Services.AddBackgroundService<ArenaInitializer>();
 
-            builder.Services.AddSingleton<IInitializerManager, DefaultInitializerManager>();   
+            builder.Services.AddSingleton<IInitializerManager, TableSheetInitializerManager>();   
         }
         else
         {

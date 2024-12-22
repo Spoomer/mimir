@@ -29,21 +29,23 @@ public class HeadlessStateService(IHeadlessGQLClient client) : IStateService
         return Task.WhenAll(addresses.Select(addr => GetState(addr, accountAddress)));
     }
 
-    public async Task<IValue?> GetState(Address address, CancellationToken stoppingToken = default)
+    public async Task<IValue?> GetState(Address address, CancellationToken stoppingToken = default, long? blockIndex = null)
     {
-        return await GetState(address, ReservedAddresses.LegacyAccount, stoppingToken);
+        return await GetState(address, ReservedAddresses.LegacyAccount, stoppingToken, blockIndex);
     }
 
     public async Task<IValue?> GetState(
         Address address,
         Address accountAddress,
-        CancellationToken stoppingToken = default
+        CancellationToken stoppingToken = default,
+        long? blockIndex = null
     )
     {
         var (result, _) = await client.GetStateAsync(
             accountAddress,
             address,
-            stoppingToken
+            stoppingToken,
+            blockIndex
         );
         return result.State is null
             ? null

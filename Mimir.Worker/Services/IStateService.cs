@@ -6,11 +6,12 @@ namespace Mimir.Worker.Services;
 public interface IStateService
 {
     Task<long> GetLatestIndex(CancellationToken stoppingToken = default, Address? accountAddress = null);
-    Task<IValue?> GetState(Address address, CancellationToken stoppingToken = default);
+    Task<IValue?> GetState(Address address, CancellationToken stoppingToken = default, long? blockIndex = null);
     Task<IValue?> GetState(
         Address address,
         Address accountAddress,
-        CancellationToken stoppingToken = default
+        CancellationToken stoppingToken = default,
+        long? blockIndex = null
     );
     Task<IValue?[]> GetStates(Address[] addresses, CancellationToken stoppingToken = default);
     Task<IValue?[]> GetStates(

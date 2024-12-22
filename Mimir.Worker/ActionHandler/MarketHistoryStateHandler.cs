@@ -49,7 +49,7 @@ public class MarketHistoryStateHandler(
             var productsStateAddress = Nekoyume.Model.Market.ProductsState.DeriveAddress(
                 avatarAddress
             );
-            var product = await StateGetter.GetProductState(productId, stoppingToken);
+            var product = await StateGetter.GetProductState(productId, stoppingToken, blockIndex);
 
             var productReceiptDocument = CreateProductReceiptDocumentAsync(blockIndex, avatarAddress, buyerAddress, productsStateAddress, product);
             ops.Add(productReceiptDocument.ToUpdateOneModel());

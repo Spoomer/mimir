@@ -200,9 +200,19 @@ public class HeadlessGQLClient : IHeadlessGQLClient
     public async Task<(GetStateResponse response, string jsonResponse)> GetStateAsync(
         Address accountAddress,
         Address address,
-        CancellationToken stoppingToken = default
+        CancellationToken stoppingToken = default,
+        long? blockIndex = null
     )
     {
+        if (blockIndex is not null)
+        {
+            return await PostGraphQLRequestAsync<GetStateResponse>(
+                GraphQLQueries.GetStateWithBlockIndex,
+                new { accountAddress, address, index = blockIndex },
+                stoppingToken
+            );
+        }
+
         return await PostGraphQLRequestAsync<GetStateResponse>(
             GraphQLQueries.GetState,
             new { accountAddress, address },

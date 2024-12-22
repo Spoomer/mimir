@@ -28,6 +28,12 @@ public static class GraphQLQueries
                 state(accountAddress: $accountAddress, address: $address)
             }";
 
+    public const string GetStateWithBlockIndex =
+        @"
+            query GetState($accountAddress: Address!, $address: Address!, $index: Long) {
+                state(accountAddress: $accountAddress, address: $address, index: $index)
+            }";
+    
     public const string GetTransactions =
         @"
             query GetTransactions($blockIndex: Long!) {

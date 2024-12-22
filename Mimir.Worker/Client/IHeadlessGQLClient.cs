@@ -16,7 +16,8 @@ public interface IHeadlessGQLClient
     Task<(GetStateResponse response, string jsonResponse)> GetStateAsync(
         Address accountAddress,
         Address address,
-        CancellationToken stoppingToken
+        CancellationToken stoppingToken,
+        long? blockIndex = null
     );
     Task<GetTransactionsResponse> GetTransactionsAsync(
         long blockIndex,

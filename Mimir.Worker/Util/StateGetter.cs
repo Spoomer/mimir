@@ -179,10 +179,11 @@ public class StateGetter
 
     public async Task<Product> GetProductState(
         Guid productId,
-        CancellationToken stoppingToken = default)
+        CancellationToken stoppingToken = default,
+        long? blockIndex = null)
     {
         var productAddress = Nekoyume.Model.Market.Product.DeriveAddress(productId);
-        var state = await _service.GetState(productAddress, stoppingToken);
+        var state = await _service.GetState(productAddress, stoppingToken, blockIndex);
         return state switch
         {
             null => throw new StateNotFoundException(productAddress, typeof(Product)),

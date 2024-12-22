@@ -16,7 +16,8 @@ public class GraphQLResponse<T>
 {
     [JsonPropertyName("data")]
     public T? Data { get; set; }
-
+    
+    [JsonPropertyName("errors")]
     public JsonElement[]? Errors { get; set; }
 }
 

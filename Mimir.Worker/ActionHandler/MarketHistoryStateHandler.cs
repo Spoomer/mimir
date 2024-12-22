@@ -26,7 +26,7 @@ public class MarketHistoryStateHandler(
         headlessGqlClient,
         initializerManager,
         "^buy_product[0-9]*$",
-        Log.ForContext<ProductStateHandler>()
+        Log.ForContext<MarketHistoryStateHandler>()
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(long blockIndex, Address signer, IValue actionPlainValue, string actionType, IValue? actionPlainValueInternal, IClientSessionHandle? session = null, CancellationToken stoppingToken = default)

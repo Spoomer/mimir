@@ -18,10 +18,10 @@ public class QueryType : ObjectType<Query>
             .Description("Retrieves a list of market products.")
             .Argument("filter", a => a.Type<ProductFilterInputType>())
             .UseOffsetPaging<ProductDocumentType>()
-            .Resolve(context =>
+            .Resolve(async context =>
             {
                 var productFilter = context.ArgumentValue<ProductFilter?>("filter");
-                return context.Service<IProductRepository>().Get(productFilter);
+                return await context.Service<IProductRepository>().GetAsync(productFilter);
             });
 
         descriptor

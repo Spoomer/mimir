@@ -11,33 +11,37 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using Nekoyume.Model.Market;
+using Nekoyume.TableData;
 using SortDirection = Mimir.MongoDB.Enums.SortDirection;
 
 namespace Mimir.MongoDB.Repositories;
 
 public interface IProductRepository
 {
-    IExecutable<ProductDocument> Get(ProductFilter? productFilter);
+    Task<IExecutable<ProductDocument>> GetAsync(ProductFilter? productFilter);
     Task<ProductDocument> GetByProductIdAsync(Guid productId);
 } 
 
 public class ProductRepository : IProductRepository
 {
+    private readonly IMongoDbService _dbService;
     private static readonly Codec Codec = new();
 
     private readonly IMongoCollection<ProductDocument> _collection;
     private readonly GridFSBucket _gridFsBucket;
+    private ItemRequirementSheet? _itemRequirementSheet;
 
     public ProductRepository(IMongoDbService dbService)
     {
+        _dbService = dbService;
         var collectionName = CollectionNames.GetCollectionName<ProductDocument>();
         _collection = dbService.GetCollection<ProductDocument>(collectionName);
         _gridFsBucket = dbService.GetGridFs();
     }
 
-    public IExecutable<ProductDocument> Get(ProductFilter? productFilter)
+    public async Task<IExecutable<ProductDocument>> GetAsync(ProductFilter? productFilter)
     {
-        var filter = BuildFilter(productFilter);
+        var filter = await BuildFilterAsync(productFilter);
 
         var find = _collection.Find(filter);
 
@@ -63,7 +67,7 @@ public class ProductRepository : IProductRepository
         return productDocument;
     }
     
-    private static FilterDefinition<ProductDocument> BuildFilter(ProductFilter? productFilter)
+    private async Task<FilterDefinition<ProductDocument>> BuildFilterAsync(ProductFilter? productFilter)
     {
         var filterBuilder = Builders<ProductDocument>.Filter;
         var filter = filterBuilder.Empty;
@@ -81,6 +85,20 @@ public class ProductRepository : IProductRepository
         if (productFilter?.ItemSubType is not null)
         {
             filter &= filterBuilder.Eq("Object.TradableItem.ItemSubType", productFilter.ItemSubType.ToString());
+        }
+
+        if (productFilter?.MaximumRequiredLevel is not null)
+        {
+            List<int> allowedItemIds = [];
+            _itemRequirementSheet ??= await _dbService.GetSheetAsync<ItemRequirementSheet>();
+            foreach (var row in _itemRequirementSheet ?? Enumerable.Empty<KeyValuePair<int, ItemRequirementSheet.Row>>())
+            {
+                if (row.Value.Level <= productFilter.MaximumRequiredLevel)
+                {
+                    allowedItemIds.Add(row.Key);
+                }
+            }
+            filter &= filterBuilder.In("Object.TradableItem.Id", allowedItemIds);
         }
 
         return filter;

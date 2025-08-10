@@ -11,4 +11,5 @@ public class ProductFilter
     public ItemSubType? ItemSubType { get; set; }
     public ProductSortBy? SortBy { get; set; }
     public SortDirection? SortDirection { get; set; } = Enums.SortDirection.Ascending;
+    public int? MaximumRequiredLevel { get; set; }
 }

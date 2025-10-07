@@ -3,12 +3,14 @@ using System.Text.RegularExpressions;
 using Bencodex;
 using Bencodex.Types;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
-using Mimir.Worker.Util;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ILogger = Serilog.ILogger;
@@ -17,25 +19,22 @@ namespace Mimir.Worker.ActionHandler;
 
 public abstract class BaseActionHandler<TMimirBsonDocument>(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
     IInitializerManager initializerManager,
-    [StringSyntax(StringSyntaxAttribute.Regex)]
-    string actionTypeRegex,
-    ILogger logger) : BackgroundService
+    [StringSyntax(StringSyntaxAttribute.Regex)] string actionTypeRegex,
+    ILogger logger,
+    IStateGetterService stateGetterService
+) : BackgroundService
     where TMimirBsonDocument : MimirBsonDocument
 {
     private readonly Codec Codec = new();
 
     protected readonly IStateService StateService = stateService;
-
-    protected readonly StateGetter StateGetter = stateService.At();
-
-    protected readonly MongoDbService Store = store;
-
+    protected readonly IMongoDbService Store = store;
     protected readonly ILogger Logger = logger;
-    
-    
+    protected readonly IStateGetterService StateGetter = stateGetterService;
+
     /// <summary>
     /// Deconstructs the given action plain value.
     /// </summary>
@@ -51,7 +50,9 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
     ///            <see cref="Libplanet.Action.ActionTypeAttribute"/>)
     /// "values": It can be any type of Bencodex.Types.
     /// </returns>
-    private static (IValue? typeId, IValue? values) DeconstructActionPlainValue(IValue actionPlainValue)
+    private static (IValue? typeId, IValue? values) DeconstructActionPlainValue(
+        IValue actionPlainValue
+    )
     {
         if (actionPlainValue is not Dictionary actionPlainValueDict)
         {
@@ -71,7 +72,7 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
     {
         var started = DateTime.UtcNow;
         Logger.Information("Start {PollerType} background service", GetType().Name);
-        
+
         await initializerManager.WaitInitializers(stoppingToken);
 
         var collectionName = CollectionNames.GetCollectionName<TMimirBsonDocument>();
@@ -96,7 +97,8 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
                 Logger.Information(
                     "Check BlockIndex synced: {SyncedBlockIndex}, current: {CurrentBlockIndex}",
                     syncedBlockIndex,
-                    currentBlockIndex);
+                    currentBlockIndex
+                );
 
                 // Because of Libplanet's sloth feature, we can fetch blocks up to tip - 1.
                 // So 'maxFetchableBlockIndex' means the maximum block index that can be fetched.
@@ -118,7 +120,8 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
                     "Process block, synced&tip: {SyncedBlockIndex}&{TipBlockIndex}, index-diff: {IndexDiff}",
                     syncedBlockIndex,
                     currentBlockIndex,
-                    indexDifference);
+                    indexDifference
+                );
 
                 await ProcessBlocksAsync(targetBlockIndex.Value, stoppingToken);
             }
@@ -129,7 +132,8 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
                     "Unexpected error, synced&tip: {SyncedBlockIndex}&{TipBlockIndex}, index-diff: {IndexDiff}",
                     syncedBlockIndex ?? -1,
                     currentBlockIndex ?? -1,
-                    indexDifference ?? -1);
+                    indexDifference ?? -1
+                );
                 await Task.Delay(TimeSpan.FromMilliseconds(1000), stoppingToken);
             }
         }
@@ -137,53 +141,55 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
         Logger.Information(
             "Stopped {PollerType} background service. Elapsed {TotalElapsedMinutes} minutes",
             GetType().Name,
-            DateTime.UtcNow.Subtract(started).Minutes);
+            DateTime.UtcNow.Subtract(started).Minutes
+        );
     }
-    
+
     /// <summary>
     /// Process block at the given <see cref="blockIndex"/>.
     /// </summary>
     /// <param name="blockIndex">The block index to process.</param>
     /// <param name="stoppingToken"></param>
-    private async Task ProcessBlocksAsync(
-        long blockIndex,
-        CancellationToken stoppingToken
-    )
+    private async Task ProcessBlocksAsync(long blockIndex, CancellationToken stoppingToken)
     {
         await ProcessTransactions(blockIndex, stoppingToken);
     }
 
-    private async Task ProcessTransactions(
-        long blockIndex,
-        CancellationToken cancellationToken)
+    private async Task ProcessTransactions(long blockIndex, CancellationToken cancellationToken)
     {
         var txsResponse = await FetchTransactionsAsync(blockIndex, cancellationToken);
 
-        Logger.Information("GetTransaction Success, tx-count: {TxCount}", txsResponse.NCTransactions.Count);
-        await HandleTransactionsAsync(
-            blockIndex,
-            txsResponse,
-            cancellationToken);
+        Logger.Information(
+            "GetTransaction Success, tx-count: {TxCount}",
+            txsResponse.NCTransactions.Count
+        );
+        await HandleTransactionsAsync(blockIndex, txsResponse, cancellationToken);
     }
 
     private async Task<TransactionResponse> FetchTransactionsAsync(
         long syncedBlockIndex,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await headlessGqlClient.GetTransactionsAsync(
             syncedBlockIndex,
-            cancellationToken);
+            cancellationToken
+        );
         return result.Transaction;
     }
 
-    private async Task<long> GetSyncedBlockIndex(string collectionName, CancellationToken stoppingToken)
+    private async Task<long> GetSyncedBlockIndex(
+        string collectionName,
+        CancellationToken stoppingToken
+    )
     {
         try
         {
             var syncedBlockIndex = await Store.GetLatestBlockIndexAsync(
                 "TxPoller",
                 collectionName,
-                stoppingToken);
+                stoppingToken
+            );
             return syncedBlockIndex;
         }
         catch (InvalidOperationException)
@@ -191,16 +197,18 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
             var currentBlockIndex = await StateService.GetLatestIndex(stoppingToken);
             Logger.Information(
                 "Metadata collection is not found, set block index to {BlockIndex} - 1",
-                currentBlockIndex);
+                currentBlockIndex
+            );
             await Store.UpdateLatestBlockIndexAsync(
                 new MetadataDocument
                 {
                     PollerType = "TxPoller",
                     CollectionName = collectionName,
-                    LatestBlockIndex = currentBlockIndex - 1
+                    LatestBlockIndex = currentBlockIndex - 1,
                 },
                 null,
-                stoppingToken);
+                stoppingToken
+            );
             return currentBlockIndex - 1;
         }
     }
@@ -208,36 +216,39 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
     private async Task HandleTransactionsAsync(
         long blockIndex,
         TransactionResponse transactionResponse,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var tuples = transactionResponse.NCTransactions
-            .Where(tx => tx is not null)
+        var tuples = transactionResponse
+            .NCTransactions.Where(tx => tx is not null)
             .Select(tx =>
                 (
                     TxId: tx!.Id,
                     Signer: new Address(tx.Signer),
-                    actions: tx.Actions
-                        .Where(action => action is not null)
+                    actions: tx.Actions.Where(action => action is not null)
                         .Select(action => Codec.Decode(Convert.FromHexString(action!.Raw)))
                         .ToList()
                 )
             )
             .ToList();
-        
+
         var documents = new List<WriteModel<BsonDocument>>();
         foreach (var (txId, signer, actions) in tuples)
         {
             foreach (var action in actions)
             {
                 var (actionType, actionValues) = DeconstructActionPlainValue(action);
-                documents.AddRange(await HandleActionAsync(
-                    blockIndex,
-                    txId,
-                    signer,
-                    action,
-                    actionType,
-                    actionValues,
-                    stoppingToken: cancellationToken));
+                documents.AddRange(
+                    await HandleActionAsync(
+                        blockIndex,
+                        txId,
+                        signer,
+                        action,
+                        actionType,
+                        actionValues,
+                        stoppingToken: cancellationToken
+                    )
+                );
             }
         }
 
@@ -246,9 +257,10 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
             await Store.UpsertStateDataManyAsync(
                 CollectionNames.GetCollectionName<TMimirBsonDocument>(),
                 documents,
-                cancellationToken: cancellationToken);   
+                cancellationToken: cancellationToken
+            );
         }
-        
+
         await Store.UpdateLatestBlockIndexAsync(
             new MetadataDocument
             {
@@ -257,7 +269,8 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
                 LatestBlockIndex = blockIndex,
             },
             null,
-            cancellationToken);
+            cancellationToken
+        );
     }
 
     private async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(
@@ -268,13 +281,14 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
         IValue? actionType,
         IValue? actionPlainValueInternal,
         IClientSessionHandle? session = null,
-        CancellationToken stoppingToken = default)
+        CancellationToken stoppingToken = default
+    )
     {
         var actionTypeStr = actionType switch
         {
             Integer integer => integer.ToString(),
             Text text => (string)text,
-            _ => null
+            _ => null,
         };
         if (actionTypeStr is null || !Regex.IsMatch(actionTypeStr, actionTypeRegex))
         {
@@ -285,7 +299,8 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
             "Handling action. {BlockIndex}, {TxId}, {ActionType}",
             blockIndex,
             txId,
-            actionTypeStr);
+            actionTypeStr
+        );
 
         var documents = await HandleActionAsync(
             blockIndex,
@@ -294,13 +309,15 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
             actionTypeStr,
             actionPlainValueInternal,
             session,
-            stoppingToken);
+            stoppingToken
+        );
 
         Logger.Information(
             "Finished handling action. {BlockIndex}, {TxId}, {ActionType}",
             blockIndex,
             txId,
-            actionTypeStr);
+            actionTypeStr
+        );
 
         return documents;
     }
@@ -313,5 +330,6 @@ public abstract class BaseActionHandler<TMimirBsonDocument>(
         string actionType,
         IValue? actionPlainValueInternal,
         IClientSessionHandle? session = null,
-        CancellationToken stoppingToken = default);
+        CancellationToken stoppingToken = default
+    );
 }

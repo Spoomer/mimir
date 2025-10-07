@@ -2,11 +2,14 @@ using System.Text.RegularExpressions;
 using Bencodex.Types;
 using Lib9c.Models.Exceptions;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.CollectionUpdaters;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Nekoyume.Action;
@@ -17,9 +20,10 @@ namespace Mimir.Worker.ActionHandler;
 
 public class ItemSlotStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
 )
     : BaseActionHandler<ItemSlotDocument>(
         stateService,
@@ -27,7 +31,8 @@ public class ItemSlotStateHandler(
         headlessGqlClient,
         initializerManager,
         "^hack_and_slash[0-9]*$|^hack_and_slash_sweep[0-9]*$|^battle_arena[0-9]*$|^event_dungeon_battle[0-9]*$|^join_arena[0-9]*$|^raid[0-9]*$",
-        Log.ForContext<ItemSlotStateHandler>()
+        Log.ForContext<ItemSlotStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(

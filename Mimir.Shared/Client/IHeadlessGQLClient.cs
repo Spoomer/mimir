@@ -1,7 +1,7 @@
 using Libplanet.Crypto;
 using Libplanet.Types.Tx;
 
-namespace Mimir.Worker.Client;
+namespace Mimir.Shared.Client;
 
 public interface IHeadlessGQLClient
 {
@@ -14,22 +14,28 @@ public interface IHeadlessGQLClient
     Task<(GetBlocksResponse response, string jsonResponse)> GetBlocksAsync(
         int offset,
         int limit,
-        CancellationToken stoppingToken);
+        CancellationToken stoppingToken
+    );
     Task<(GetTipResponse response, string jsonResponse)> GetTipAsync(
         CancellationToken stoppingToken,
-        Address? accountAddress);
+        Address? accountAddress
+    );
     Task<(GetStateResponse response, string jsonResponse)> GetStateAsync(
         Address accountAddress,
         Address address,
         CancellationToken stoppingToken,
         long? blockIndex = null
     );
-    Task<(GetTransactionStatusesResponse response, string jsonResponse)> GetTransactionStatusesAsync(
-        List<TxId> txIds,
-        CancellationToken stoppingToken
-    );
+    Task<(
+        GetTransactionStatusesResponse response,
+        string jsonResponse
+    )> GetTransactionStatusesAsync(List<TxId> txIds, CancellationToken stoppingToken);
     Task<GetTransactionsResponse> GetTransactionsAsync(
         long blockIndex,
+        CancellationToken stoppingToken
+    );
+    Task<(GetGoldBalanceResponse response, string jsonResponse)> GetGoldBalanceAsync(
+        Address address,
         CancellationToken stoppingToken
     );
 }

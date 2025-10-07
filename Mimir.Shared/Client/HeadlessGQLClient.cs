@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Mimir.Worker.Client;
+namespace Mimir.Shared.Client;
 
 public class HeadlessGQLClient : IHeadlessGQLClient
 {
@@ -293,6 +293,19 @@ public class HeadlessGQLClient : IHeadlessGQLClient
         return await PostGraphQLRequestAsync<GetTransactionStatusesResponse>(
             GraphQLQueries.GetTransactionStatus,
             new { txIds = txIds.Select((txId) => txId.ToString()).ToList() },
+            stoppingToken,
+            null
+        );
+    }
+
+    public async Task<(GetGoldBalanceResponse response, string jsonResponse)> GetGoldBalanceAsync(
+        Address address,
+        CancellationToken stoppingToken
+    )
+    {
+        return await PostGraphQLRequestAsync<GetGoldBalanceResponse>(
+            GraphQLQueries.GetGoldBalance,
+            new { address },
             stoppingToken,
             null
         );

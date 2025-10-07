@@ -1,9 +1,12 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 // using Bencodex.Types;
 // using Libplanet.Crypto;
 // using Lib9c.Models.AdventureBoss;
 // using Mimir.Worker.Models;
 // using Mimir.Worker.Models.State.AdventureBoss;
-// using Mimir.Worker.Services;
+// using Mimir.Shared.Services;
 
 // namespace Mimir.Worker.Handler.AdventureBoss;
 
@@ -12,7 +15,7 @@
 //     public StateData ConvertToStateData(StateDiffContext context) =>
 //         new(context.Address, ConvertToState(context.Address, context.RawState));
 
-//     public async Task StoreStateData(MongoDbService store, StateData stateData) =>
+//     public async Task StoreStateData(IMongoDbService store, StateData stateData) =>
 //         await store.UpsertStateDataAsyncWithLinkAvatar(stateData);
 
 //     private static SeasonInfoState ConvertToState(Address address, IValue state)

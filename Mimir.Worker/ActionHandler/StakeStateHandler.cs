@@ -1,18 +1,35 @@
 using Bencodex.Types;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.CollectionUpdaters;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Serilog;
 
 namespace Mimir.Worker.ActionHandler;
 
-public class StakeStateHandler(IStateService stateService, MongoDbService store, IHeadlessGQLClient headlessGqlClient, IInitializerManager initializerManager) :
-    BaseActionHandler<StakeDocument>(stateService, store, headlessGqlClient, initializerManager, "^stake[0-9]*$", Log.ForContext<StakeStateHandler>())
+public class StakeStateHandler(
+    IStateService stateService,
+    IMongoDbService store,
+    IHeadlessGQLClient headlessGqlClient,
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
+)
+    : BaseActionHandler<StakeDocument>(
+        stateService,
+        store,
+        headlessGqlClient,
+        initializerManager,
+        "^stake[0-9]*$",
+        Log.ForContext<StakeStateHandler>(),
+        stateGetterService
+    )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(
         long blockIndex,
@@ -21,7 +38,8 @@ public class StakeStateHandler(IStateService stateService, MongoDbService store,
         string actionType,
         IValue? actionPlainValueInternal,
         IClientSessionHandle? session = null,
-        CancellationToken stoppingToken = default)
+        CancellationToken stoppingToken = default
+    )
     {
         const string amountKey = "am";
         if (actionPlainValueInternal is not Dictionary dictionary)
@@ -35,6 +53,7 @@ public class StakeStateHandler(IStateService stateService, MongoDbService store,
             blockIndex,
             signer,
             (Integer)dictionary[amountKey],
-            stoppingToken);
+            stoppingToken
+        );
     }
 }

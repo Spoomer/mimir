@@ -3,6 +3,8 @@ using Lib9c.GraphQL.Extensions;
 using Libplanet.Crypto;
 using Mimir.MongoDB.Bson;
 using Mimir.MongoDB.Repositories;
+using Mimir.MongoDB.Exceptions;
+using Mimir.Services;
 using Moq;
 
 namespace Mimir.Tests.QueryTests;
@@ -58,7 +60,7 @@ public class BalanceQueryTest
 
         await Verify(result);
     }
-    
+
     [Fact]
     public async Task GraphQL_Query_Balance_Throws_When_No_Inputs_Provided()
     {

@@ -1,3 +1,4 @@
+using Hangfire;
 using HotChocolate.AspNetCore;
 using Lib9c.GraphQL.Extensions;
 using Lib9c.GraphQL.InputObjects;
@@ -46,8 +47,32 @@ public class Query
     /// </summary>
     /// <param name="address">The address of the agent.</param>
     /// <returns>The agent state</returns>
-    public async Task<AgentState> GetAgentAsync(Address address, [Service] IAgentRepository repo) =>
-        (await repo.GetByAddressAsync(address)).Object;
+    public async Task<AgentState> GetAgentAsync(
+        Address address,
+        [Service] IAgentRepository repo,
+        [Service] IBackgroundJobClient jobClient
+    )
+    {
+        try
+        {
+            var document = await repo.GetByAddressAsync(address);
+            if (document.Metadata.StoredBlockIndex != 0)
+            {
+                jobClient.Enqueue<IStateRecoveryService>(service =>
+                    service.TryRecoverAgentStateAsync(address)
+                );
+            }
+
+            return document.Object;
+        }
+        catch (Mimir.MongoDB.Exceptions.DocumentNotFoundInMongoCollectionException)
+        {
+            jobClient.Enqueue<IStateRecoveryService>(service =>
+                service.TryRecoverAgentStateAsync(address)
+            );
+            throw;
+        }
+    }
 
     /// <summary>
     /// Get an avatar state by address.
@@ -56,8 +81,22 @@ public class Query
     /// <returns>The avatar state</returns>
     public async Task<AvatarState> GetAvatarAsync(
         Address address,
-        [Service] IAvatarRepository repo
-    ) => (await repo.GetByAddressAsync(address)).Object;
+        [Service] IAvatarRepository repo,
+        [Service] IBackgroundJobClient jobClient
+    )
+    {
+        try
+        {
+            return (await repo.GetByAddressAsync(address)).Object;
+        }
+        catch (Mimir.MongoDB.Exceptions.DocumentNotFoundInMongoCollectionException)
+        {
+            jobClient.Enqueue<IStateRecoveryService>(service =>
+                service.TryRecoverAvatarStateAsync(address)
+            );
+            throw;
+        }
+    }
 
     /// <summary>
     /// Get the balance of a specific currency for a given address.
@@ -71,20 +110,36 @@ public class Query
         CurrencyInput? currency,
         string? currencyTicker,
         Address address,
-        [Service] IBalanceRepository repo
+        [Service] IBalanceRepository repo,
+        [Service] IBackgroundJobClient jobClient
     )
     {
-        if (currency is not null)
+        try
         {
-            return (await repo.GetByAddressAsync(currency.ToCurrency(), address)).Object;
-        }
+            if (currency is not null)
+            {
+                return (await repo.GetByAddressAsync(currency.ToCurrency(), address)).Object;
+            }
 
-        if (currencyTicker is not null)
+            if (currencyTicker is not null)
+            {
+                return (await repo.GetByAddressAsync(currencyTicker.ToCurrency(), address)).Object;
+            }
+
+            throw new GraphQLRequestException(
+                "Either currency or currencyTicker must be provided."
+            );
+        }
+        catch (Mimir.MongoDB.Exceptions.DocumentNotFoundInMongoCollectionException)
         {
-            return (await repo.GetByAddressAsync(currencyTicker.ToCurrency(), address)).Object;
+            if (currencyTicker?.ToUpper() == "NCG")
+            {
+                jobClient.Enqueue<IStateRecoveryService>(service =>
+                    service.TryRecoverNCGBalanceAsync(address)
+                );
+            }
+            throw;
         }
-
-        throw new GraphQLRequestException("Either currency or currencyTicker must be provided.");
     }
 
     /// <summary>
@@ -150,10 +205,10 @@ public class Query
     /// </summary>
     /// <param name="txId">Transaction ID.</param>
     /// <returns>The Transaction Information</returns>
-    public async Task<TransactionDocument> GetTransactionAsync(string txId, [Service] ITransactionRepository repo) =>
-        await repo.GetByTxIdAsync(txId);
-
-
+    public async Task<TransactionDocument> GetTransactionAsync(
+        string txId,
+        [Service] ITransactionRepository repo
+    ) => await repo.GetByTxIdAsync(txId);
 
     /// <summary>
     /// Get an pet state by avatar address.

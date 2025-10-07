@@ -1,15 +1,28 @@
 using Lib9c;
-using Mimir.Worker.Client;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Serilog;
 
 namespace Mimir.Worker.Handler.Balance;
 
 public sealed class CrystalBalanceHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
-    : BaseBalanceHandler("balance_crystal", dbService, stateService, headlessGqlClient, initializerManager,
-        Log.ForContext<CrystalBalanceHandler>(), Currencies.Crystal);
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
+)
+    : BaseBalanceHandler(
+        "balance_crystal",
+        dbService,
+        stateService,
+        headlessGqlClient,
+        initializerManager,
+        stateGetterService,
+        Log.ForContext<CrystalBalanceHandler>(),
+        Currencies.Crystal
+    );

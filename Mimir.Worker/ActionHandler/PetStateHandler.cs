@@ -2,11 +2,14 @@ using System.Text.RegularExpressions;
 using Bencodex.Types;
 using Lib9c.Models.Extensions;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Exceptions;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Serilog;
@@ -15,9 +18,10 @@ namespace Mimir.Worker.ActionHandler;
 
 public class PetStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
 )
     : BaseActionHandler<PetStateDocument>(
         stateService,
@@ -25,7 +29,8 @@ public class PetStateHandler(
         headlessGqlClient,
         initializerManager,
         "^pet_enhancement[0-9]*$|^combination_equipment[0-9]*$|^rapid_combination[0-9]*$",
-        Log.ForContext<PetStateHandler>()
+        Log.ForContext<PetStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(

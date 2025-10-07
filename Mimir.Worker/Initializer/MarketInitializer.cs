@@ -1,6 +1,9 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 // using Mimir.Worker.ActionHandler;
-// using Mimir.Worker.Constants;
-// using Mimir.Worker.Services;
+// using Mimir.Shared.Constants;
+// using Mimir.Shared.Services;
 // using Mimir.Worker.Util;
 // using MongoDB.Bson;
 // using Serilog;
@@ -13,7 +16,7 @@
 // {
 //     private StateGetter _stateGetter;
 
-//     public MarketInitializer(IStateService service, MongoDbService store)
+//     public MarketInitializer(IStateService service, IMongoDbService store)
 //         : base(service, store, Log.ForContext<MarketInitializer>())
 //     {
 //         _stateGetter = service.At();

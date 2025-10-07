@@ -1,15 +1,28 @@
 using Lib9c;
-using Mimir.Worker.Client;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Serilog;
 
 namespace Mimir.Worker.Handler.Balance;
 
 public sealed class FreyaLiberationRuneBalanceHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
-    : BaseBalanceHandler("balance_freya_liberation_rune", dbService, stateService, headlessGqlClient,
-        initializerManager, Log.ForContext<FreyaLiberationRuneBalanceHandler>(), Currencies.FreyaLiberationRune);
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
+)
+    : BaseBalanceHandler(
+        "balance_freya_liberation_rune",
+        dbService,
+        stateService,
+        headlessGqlClient,
+        initializerManager,
+        stateGetterService,
+        Log.ForContext<FreyaLiberationRuneBalanceHandler>(),
+        Currencies.FreyaLiberationRune
+    );

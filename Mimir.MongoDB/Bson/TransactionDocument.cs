@@ -1,7 +1,8 @@
+using HotChocolate;
 using Lib9c.Models.Block;
+using Libplanet.Crypto;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
-using HotChocolate;
 
 namespace Mimir.MongoDB.Bson;
 
@@ -13,10 +14,32 @@ namespace Mimir.MongoDB.Bson;
 public record TransactionDocument(
     [property: BsonIgnore, JsonIgnore, GraphQLIgnore] long StoredBlockIndex,
     [property: BsonIgnore, JsonIgnore, GraphQLIgnore] string TxId,
-    string BlockHash,
+    string? BlockHash,
     long BlockIndex,
-    string firstActionTypeId,
-    string? firstAvatarAddressInActionArguments,
-    string? firstNCGAmountInActionArguments,
+    string? BlockTimestamp,
+    ExtractedActionValues? extractedActionValues,
     Transaction Object
-) : MimirBsonDocument(TxId, new DocumentMetadata(1, StoredBlockIndex));
+) : MimirBsonDocument(TxId, new DocumentMetadata(4, StoredBlockIndex));
+
+/// <summary>
+/// Extracted action values from the action arguments.
+/// </summary>
+/// <param name="ActionTypeId"></param>
+/// <param name="NCGAmount"></param>
+/// <param name="AvatarAddress"></param>
+/// <param name="Recipient"></param>
+/// <param name="Sender"></param>
+public record ExtractedActionValues(
+    string TypeId,
+    Address? AvatarAddress,
+    Address? Sender,
+    List<RecipientInfo>? Recipients,
+    List<string>? FungibleAssetValues,
+    List<Address>? InvolvedAvatarAddresses,
+    List<Address>? InvolvedAddresses
+);
+
+/// <summary>
+/// Recipient information for asset transfers.
+/// </summary>
+public record RecipientInfo(Address Recipient, string Amount);

@@ -1,7 +1,10 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using Libplanet.Crypto;
-using Mimir.Worker.Client;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter;
 using Nekoyume;
 using Serilog;
@@ -9,10 +12,11 @@ using Serilog;
 namespace Mimir.Worker.Handler;
 
 public sealed class AdventureCpStateHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter)
     : BaseDiffHandler(
         "adventure_cp",
         Addresses.AdventureCp,
@@ -21,4 +25,5 @@ public sealed class AdventureCpStateHandler(
         stateService,
         headlessGqlClient,
         initializerManager,
+        stateGetter,
         Log.ForContext<AdventureCpStateHandler>());

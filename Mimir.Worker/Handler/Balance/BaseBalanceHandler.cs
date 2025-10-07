@@ -1,8 +1,11 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using Libplanet.Types.Assets;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter.Balance;
 using ILogger = Serilog.ILogger;
 
@@ -10,12 +13,14 @@ namespace Mimir.Worker.Handler.Balance;
 
 public abstract class BaseBalanceHandler(
     string collectionName,
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
     IInitializerManager initializerManager,
+    IStateGetterService stateGetterService,
     ILogger logger,
-    Currency currency)
+    Currency currency
+)
     : BaseDiffHandler(
         collectionName,
         CollectionNames.GetAccountAddress(currency),
@@ -24,4 +29,6 @@ public abstract class BaseBalanceHandler(
         stateService,
         headlessGqlClient,
         initializerManager,
-        logger);
+        stateGetterService,
+        logger
+    );

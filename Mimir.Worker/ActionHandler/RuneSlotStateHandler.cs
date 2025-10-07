@@ -2,11 +2,13 @@ using System.Text.RegularExpressions;
 using Bencodex.Types;
 using Libplanet.Crypto;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.CollectionUpdaters;
 using Mimir.Worker.Initializer;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Nekoyume.Action;
@@ -17,9 +19,11 @@ namespace Mimir.Worker.ActionHandler;
 
 public class RuneSlotStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService,
+    PlanetType planetType
 )
     : BaseActionHandler<RuneSlotDocument>(
         stateService,
@@ -27,7 +31,8 @@ public class RuneSlotStateHandler(
         headlessGqlClient,
         initializerManager,
         "^(battle_arena[0-9]*|event_dungeon_battle[0-9]*|hack_and_slash[0-9]*|hack_and_slash_sweep[0-9]*|join_arena[0-9]*|raid[0-9]*|unlock_rune_slot[0-9]*)$",
-        Log.ForContext<RuneSlotStateHandler>()
+        Log.ForContext<RuneSlotStateHandler>(),
+        stateGetterService
     )
 {
     private static readonly BattleType[] BattleTypes = Enum.GetValues<BattleType>();

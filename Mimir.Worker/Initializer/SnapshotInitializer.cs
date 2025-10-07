@@ -1,3 +1,6 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 // using Bencodex.Types;
 // using Libplanet.Action.State;
 // using Libplanet.Blockchain;
@@ -5,10 +8,10 @@
 // using Libplanet.Crypto;
 // using Libplanet.Store;
 // using Libplanet.Store.Trie;
-// using Mimir.Worker.Constants;
+// using Mimir.Shared.Constants;
 // using Mimir.Worker.Handler;
 // using Mimir.Worker.Models;
-// using Mimir.Worker.Services;
+// using Mimir.Shared.Services;
 // using Mimir.Worker.Util;
 // using Serilog;
 // using ILogger = Serilog.ILogger;
@@ -17,11 +20,11 @@
 
 // public class SnapshotInitializer
 // {
-//     private readonly MongoDbService _store;
+//     private readonly IMongoDbService _store;
 //     private readonly ILogger _logger;
 //     private readonly string _chainStorePath;
 
-//     public SnapshotInitializer(MongoDbService store, string chainStorePath)
+//     public SnapshotInitializer(IMongoDbService store, string chainStorePath)
 //     {
 //         _store = store;
 //         _chainStorePath = chainStorePath;

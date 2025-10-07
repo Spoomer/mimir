@@ -3,9 +3,9 @@ using Bencodex.Types;
 using Libplanet.Action.State;
 using Libplanet.Crypto;
 using Libplanet.Types.Blocks;
-using Mimir.Worker.Client;
+using Mimir.Shared.Client;
 
-namespace Mimir.Worker.Services;
+namespace Mimir.Shared.Services;
 
 public class HeadlessStateService(IHeadlessGQLClient client) : IStateService
 {
@@ -52,9 +52,21 @@ public class HeadlessStateService(IHeadlessGQLClient client) : IStateService
             : Codec.Decode(Convert.FromHexString(result.State));
     }
 
-    public async Task<long> GetLatestIndex(CancellationToken stoppingToken = default, Address? accountAddress = null)
+    public async Task<long> GetLatestIndex(
+        CancellationToken stoppingToken = default,
+        Address? accountAddress = null
+    )
     {
         var (result, _) = await client.GetTipAsync(stoppingToken, accountAddress);
         return result.NodeStatus.Tip.Index;
+    }
+
+    public async Task<string> GetNCGBalance(
+        Address address,
+        CancellationToken stoppingToken = default
+    )
+    {
+        var (result, _) = await client.GetGoldBalanceAsync(address, stoppingToken);
+        return result.GoldBalance;
     }
 }

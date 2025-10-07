@@ -1,4 +1,4 @@
-namespace Mimir.Worker.Client;
+namespace Mimir.Shared.Client;
 
 public static class GraphQLQueries
 {
@@ -57,6 +57,12 @@ public static class GraphQLQueries
                         index
                     }
                 }
+            }";
+
+    public const string GetGoldBalance =
+        @"
+            query GetGoldBalance($address: Address!) {
+                goldBalance(address: $address)
             }";
 
     public const string GetState =

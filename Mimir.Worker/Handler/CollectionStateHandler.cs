@@ -1,6 +1,9 @@
-using Mimir.Worker.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter;
 using Nekoyume;
 using Serilog;
@@ -8,15 +11,20 @@ using Serilog;
 namespace Mimir.Worker.Handler;
 
 public sealed class CollectionStateHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
-    : BaseDiffHandler("collection",
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter
+)
+    : BaseDiffHandler(
+        "collection",
         Addresses.Collection,
         new CollectionStateDocumentConverter(),
         dbService,
         stateService,
         headlessGqlClient,
         initializerManager,
-        Log.ForContext<CollectionStateHandler>());
+        stateGetter,
+        Log.ForContext<CollectionStateHandler>()
+    );

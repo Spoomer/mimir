@@ -1,6 +1,9 @@
-using Mimir.Worker.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter;
 using Nekoyume;
 using Serilog;
@@ -8,10 +11,11 @@ using Serilog;
 namespace Mimir.Worker.Handler;
 
 public sealed class WorldInformationStateHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter)
     : BaseDiffHandler("world_information",
         Addresses.WorldInformation,
         new WorldInformationStateDocumentConverter(),
@@ -19,4 +23,5 @@ public sealed class WorldInformationStateHandler(
         stateService,
         headlessGqlClient,
         initializerManager,
+        stateGetter,
         Log.ForContext<WorldInformationStateHandler>());

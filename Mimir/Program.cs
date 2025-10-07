@@ -2,17 +2,26 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.Redis;
 using Lib9c.GraphQL.Types;
 using Lib9c.Models.Block;
 using Libplanet.Common;
 using Libplanet.Crypto;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Mimir.Extensions;
 using Mimir.GraphQL;
 using Mimir.MongoDB.Bson;
 using Mimir.MongoDB.Repositories;
 using Mimir.MongoDB.Services;
 using Mimir.Options;
 using Mimir.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Options;
+using Mimir.Shared.Services;
+using StackExchange.Redis;
 using BalanceRepository = Mimir.MongoDB.Repositories.BalanceRepository;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +40,12 @@ builder.Services.Configure<JwtOption>(
 builder.Services.Configure<WncgApiOption>(
     builder.Configuration.GetRequiredSection(WncgApiOption.SectionName)
 );
+builder.Services.Configure<HangfireOption>(
+    builder.Configuration.GetRequiredSection(HangfireOption.SectionName)
+);
+builder.Services.Configure<HeadlessOption>(
+    builder.Configuration.GetRequiredSection(HeadlessOption.SectionName)
+);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter())
@@ -40,7 +55,30 @@ builder.WebHost.UseSentry();
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSingleton<IMongoDbService, MongoDbService>();
+
+builder.Services.AddSingleton<IHeadlessGQLClient, HeadlessGQLClient>(serviceProvider =>
+{
+    var config = serviceProvider.GetRequiredService<IOptions<HeadlessOption>>().Value;
+    return new HeadlessGQLClient(config.HeadlessEndpoints, config.JwtIssuer, config.JwtSecretKey);
+});
+builder.Services.AddSingleton<IStateService, HeadlessStateService>();
+builder.Services.AddSingleton<IStateGetterService, StateGetterService>(serviceProvider =>
+{
+    var stateService = serviceProvider.GetRequiredService<IStateService>();
+    var dbConfig = serviceProvider.GetRequiredService<IOptions<DatabaseOption>>().Value;
+    return new StateGetterService(stateService, dbConfig.PlanetType);
+});
+
+builder.Services.AddSingleton<IMongoDbService, MongoDbService>(serviceProvider =>
+{
+    var config = serviceProvider.GetRequiredService<IOptions<DatabaseOption>>().Value;
+
+    return new MongoDbService(
+        config.ConnectionString,
+        config.PlanetType.ToString().ToLowerInvariant(),
+        config.CAFile
+    );
+});
 
 // NOTE: MongoDB repositories. Sort in alphabetical order.
 builder.Services.AddSingleton<IActionPointRepository, ActionPointRepository>();
@@ -83,6 +121,16 @@ builder.Services.AddSingleton<ICpRepository<ArenaCpDocument>, CpRepository<Arena
 builder.Services.AddSingleton<ICpRepository<RaidCpDocument>, CpRepository<RaidCpDocument>>();
 
 // ~MongoDB repositories.
+
+// Hangfire configuration
+var hangfireOption = builder
+    .Configuration.GetSection(HangfireOption.SectionName)
+    .Get<HangfireOption>();
+
+builder.Services.AddHangfireServices(hangfireOption);
+
+// State recovery service
+builder.Services.AddScoped<IStateRecoveryService, StateRecoveryService>();
 builder.Services.AddCors();
 builder.Services.AddHttpClient();
 builder
@@ -92,16 +140,15 @@ builder
     .AddMimirGraphQLTypes()
     .AddErrorFilter<ErrorFilter>()
     .AddMongoDbPagingProviders(providerName: "MongoDB", defaultProvider: true)
-    .SetPagingOptions(new HotChocolate.Types.Pagination.PagingOptions
-    {
-        MaxPageSize = 300,
-        DefaultPageSize = 100
-    })
+    .SetPagingOptions(
+        new HotChocolate.Types.Pagination.PagingOptions { MaxPageSize = 300, DefaultPageSize = 100 }
+    )
     .BindRuntimeType(typeof(Address), typeof(AddressType))
     .BindRuntimeType(typeof(BigInteger), typeof(BigIntegerType))
     .BindRuntimeType(typeof(HashDigest<SHA256>), typeof(HashDigestSHA256Type))
     .BindRuntimeType(typeof(Lib9c.Models.Block.Action), typeof(Lib9c.GraphQL.Types.ActionType))
-    .BindRuntimeType(typeof(MongoDB.Bson.BsonDocument), typeof(Lib9c.GraphQL.Types.BsonDocumentType))
+    .BindRuntimeType(typeof(Lib9c.Models.Block.Transaction), typeof(TransactionType))
+    .BindRuntimeType(typeof(MongoDB.Bson.BsonDocument), typeof(BsonDocumentType))
     .ModifyRequestOptions(requestExecutorOptions =>
     {
         requestExecutorOptions.IncludeExceptionDetails = true;
@@ -143,7 +190,7 @@ builder.Services.AddRateLimiter(limiterOptions =>
                         rateLimitOptions.ReplenishmentPeriod
                     ),
                     TokensPerPeriod = rateLimitOptions.TokensPerPeriod,
-                    AutoReplenishment = rateLimitOptions.AutoReplenishment
+                    AutoReplenishment = rateLimitOptions.AutoReplenishment,
                 }
             );
         }
@@ -158,6 +205,21 @@ builder.Services.AddHttpClient<IWncgPriceService, WncgPriceService>(client =>
 });
 
 var app = builder.Build();
+
+// Hangfire dashboard
+app.UseHangfireDashboard(
+    hangfireOption.DashboardPath,
+    new DashboardOptions
+    {
+        Authorization = new[]
+        {
+            new BasicAuthDashboardAuthorizationFilter(
+                app.Services.GetRequiredService<IOptions<HangfireOption>>()
+            ),
+        },
+    }
+);
+
 app.UseRouting();
 app.MapGet("/", () => "Health Check").RequireRateLimiting("jwt");
 app.MapGraphQL().RequireRateLimiting("jwt");

@@ -2,7 +2,9 @@ using Bencodex.Types;
 using Lib9c.Models.Market;
 using Libplanet.Crypto;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using Mimir.Worker.Exceptions;
 using Mimir.Worker.Initializer.Manager;
 using Mimir.Worker.Services;
@@ -18,7 +20,8 @@ public class MarketHistoryStateHandler(
     IStateService stateService,
     MongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
 )
     : BaseActionHandler<ProductReceiptDocument>(
         stateService,
@@ -26,7 +29,8 @@ public class MarketHistoryStateHandler(
         headlessGqlClient,
         initializerManager,
         "^buy_product[0-9]*$",
-        Log.ForContext<MarketHistoryStateHandler>()
+        Log.ForContext<MarketHistoryStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(long blockIndex, Address signer, IValue actionPlainValue, string actionType, IValue? actionPlainValueInternal, IClientSessionHandle? session = null, CancellationToken stoppingToken = default)

@@ -1,6 +1,9 @@
-using Mimir.Worker.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter;
 using Nekoyume;
 using Serilog;
@@ -8,10 +11,11 @@ using Serilog;
 namespace Mimir.Worker.Handler;
 
 public sealed class AllCombinationSlotStateHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter)
     : BaseDiffHandler("all_combination_slot",
         Addresses.CombinationSlot,
         new AllCombinationSlotStateDocumentConverter(),
@@ -19,4 +23,5 @@ public sealed class AllCombinationSlotStateHandler(
         stateService,
         headlessGqlClient,
         initializerManager,
+        stateGetter,
         Log.ForContext<AllCombinationSlotStateHandler>());

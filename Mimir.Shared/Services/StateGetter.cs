@@ -1,9 +1,13 @@
+using System.Numerics;
 using Bencodex.Types;
 using Lib9c.Models.Items;
 using Lib9c.Models.States;
+using Libplanet.Action.State;
 using Libplanet.Crypto;
-using Mimir.Worker.Exceptions;
-using Mimir.Worker.Services;
+using Libplanet.Types.Assets;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Exceptions;
+using Mimir.Shared.Services;
 using Nekoyume;
 using Nekoyume.Action;
 using Nekoyume.Model.EnumType;
@@ -11,15 +15,17 @@ using Nekoyume.TableData;
 using Product = Lib9c.Models.Market.Product;
 using ProductsState = Lib9c.Models.Market.ProductsState;
 
-namespace Mimir.Worker.Util;
+namespace Mimir.Shared.Services;
 
-public class StateGetter
+public class StateGetterService : IStateGetterService
 {
     private readonly IStateService _service;
+    private readonly PlanetType _planetType;
 
-    public StateGetter(IStateService service)
+    public StateGetterService(IStateService service, PlanetType planetType)
     {
         _service = service;
+        _planetType = planetType;
     }
 
     public async Task<T> GetSheet<T>(CancellationToken stoppingToken = default)
@@ -37,6 +43,62 @@ public class StateGetter
         var sheet = new T();
         sheet.Set(sheetValue.Value);
         return sheet;
+    }
+
+    public async Task<string> GetNCGBalanceAsync(
+        Address address,
+        CancellationToken stoppingToken = default
+    )
+    {
+        var currency = _planetType switch
+        {
+            PlanetType.Odin => NCGCurrency.OdinNCGCurrency,
+            PlanetType.Heimdall => NCGCurrency.HeimdallNCGCurrency,
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+
+        var state = await _service.GetNCGBalance(address, stoppingToken);
+
+        if (state is null)
+        {
+            throw new StateNotFoundException(address, typeof(long));
+        }
+        var stateString = state.ToString();
+        BigInteger value;
+        if (stateString.Contains('.'))
+        {
+            value = BigInteger.Parse(stateString.Replace(".", ""));
+        }
+        else
+        {
+            value = BigInteger.Parse(stateString) * BigInteger.Pow(10, currency.DecimalPlaces);
+        }
+        return FungibleAssetValue.FromRawValue(currency, value).GetQuantityString();
+    }
+
+    public async Task<long> GetDailyRewardAsync(
+        Address avatarAddress,
+        CancellationToken stoppingToken = default
+    )
+    {
+        var state = await GetStateWithLegacyAccount(
+            avatarAddress,
+            Addresses.DailyReward,
+            stoppingToken
+        );
+
+        if (state is null)
+        {
+            throw new StateNotFoundException(avatarAddress, typeof(long));
+        }
+
+        if (state is not Integer value)
+            throw new ArgumentException(
+                $"Invalid state type. Expected {nameof(Integer)}, got {state.GetType().Name}.",
+                nameof(state)
+            );
+
+        return value;
     }
 
     public async Task<AvatarState> GetAvatarStateAsync(
@@ -219,7 +281,6 @@ public class StateGetter
             return new AllCombinationSlotState(state);
         }
 
-        // try migration
         var allCombinationSlotState = new AllCombinationSlotState();
         for (var i = 0; i < Nekoyume.Model.State.AvatarState.DefaultCombinationSlotCount; i++)
         {

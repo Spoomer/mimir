@@ -1,49 +1,55 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
+using System;
 using Bencodex.Types;
 using Lib9c.Models.Extensions;
 using Lib9c.Models.Items;
 using Lib9c.Models.Market;
+using Mimir.MongoDB.Services;
 using Nekoyume.Battle;
 using Nekoyume.Helper;
 using Nekoyume.TableData;
 using Nekoyume.TableData.Crystal;
-using ILogger = Serilog.ILogger;
 
 namespace Mimir.Worker.Services;
 
 public class ItemProductCalculationService : IItemProductCalculationService
 {
-    private readonly MongoDbService _store;
+    private readonly IMongoDbService _store;
 
-    public ItemProductCalculationService(MongoDbService store)
+    public ItemProductCalculationService(IMongoDbService store)
     {
         _store = store;
     }
 
-    public async Task<int?> CalculateCombatPointAsync(ItemProduct itemProduct)
+    public async Task<long?> CalculateCombatPointAsync(ItemProduct itemProduct)
     {
         var costumeStatSheet = await _store.GetSheetAsync<CostumeStatSheet>();
 
         if (costumeStatSheet != null)
         {
-            int? cp = itemProduct.TradableItem switch
+            long? cp = itemProduct.TradableItem switch
             {
-                ItemUsable itemUsable
-                    => CPHelper.GetCP(
-                        (Nekoyume.Model.Item.ItemUsable)
-                        Nekoyume.Model.Item.ItemFactory.Deserialize(
-                            (Dictionary)itemUsable.Bencoded
-                        )
-                    ),
-                Costume costume => CPHelper.GetCP(new Nekoyume.Model.Item.Costume((Dictionary)costume.Bencoded), costumeStatSheet),
-                _ => null
+                ItemUsable itemUsable => CPHelper.GetCP(
+                    (Nekoyume.Model.Item.ItemUsable)
+                        Nekoyume.Model.Item.ItemFactory.Deserialize((Dictionary)itemUsable.Bencoded)
+                ),
+                Costume costume => CPHelper.GetCP(
+                    new Nekoyume.Model.Item.Costume((Dictionary)costume.Bencoded),
+                    costumeStatSheet
+                ),
+                _ => null,
             };
             return cp;
         }
-        
+
         return null;
     }
 
-    public async Task<(int? crystal, int? crystalPerPrice)> CalculateCrystalMetricsAsync(ItemProduct itemProduct)
+    public async Task<(int? crystal, int? crystalPerPrice)> CalculateCrystalMetricsAsync(
+        ItemProduct itemProduct
+    )
     {
         var crystalEquipmentGrindingSheet =
             await _store.GetSheetAsync<CrystalEquipmentGrindingSheet>();

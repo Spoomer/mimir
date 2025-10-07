@@ -3,9 +3,11 @@ using Lib9c.Models.Exceptions;
 using Lib9c.Models.Extensions;
 using Libplanet.Crypto;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Nekoyume;
@@ -15,8 +17,23 @@ using Serilog;
 
 namespace Mimir.Worker.ActionHandler;
 
-public class RaiderStateHandler(IStateService stateService, MongoDbService store, IHeadlessGQLClient headlessGqlClient, IInitializerManager initializerManager)
-    : BaseActionHandler<RaiderStateDocument>(stateService, store, headlessGqlClient, initializerManager, "^raid[0-9]*$", Log.ForContext<RaiderStateHandler>())
+public class RaiderStateHandler(
+    IStateService stateService,
+    IMongoDbService store,
+    IHeadlessGQLClient headlessGqlClient,
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService,
+    PlanetType planetType
+)
+    : BaseActionHandler<RaiderStateDocument>(
+        stateService,
+        store,
+        headlessGqlClient,
+        initializerManager,
+        "^raid[0-9]*$",
+        Log.ForContext<RaiderStateHandler>(),
+        stateGetterService
+    )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(
         long blockIndex,
@@ -25,7 +42,8 @@ public class RaiderStateHandler(IStateService stateService, MongoDbService store
         string actionType,
         IValue? actionPlainValueInternal,
         IClientSessionHandle? session = null,
-        CancellationToken stoppingToken = default)
+        CancellationToken stoppingToken = default
+    )
     {
         if (actionPlainValueInternal is null)
         {
@@ -37,14 +55,17 @@ public class RaiderStateHandler(IStateService stateService, MongoDbService store
             throw new UnsupportedArgumentTypeException<ValueKind>(
                 nameof(actionPlainValueInternal),
                 [ValueKind.Dictionary],
-                actionPlainValueInternal.Kind);
+                actionPlainValueInternal.Kind
+            );
         }
 
         var avatarAddress = d["a"].ToAddress();
         var worldBossListSheet = await Store.GetSheetAsync<WorldBossListSheet>(stoppingToken);
         if (worldBossListSheet is null)
         {
-            throw new InvalidOperationException($"{nameof(WorldBossKillRewardRecordStateHandler)} requires ${nameof(WorldBossListSheet)}");
+            throw new InvalidOperationException(
+                $"{nameof(WorldBossKillRewardRecordStateHandler)} requires ${nameof(WorldBossListSheet)}"
+            );
         }
 
         var row = worldBossListSheet.FindRowByBlockIndex(blockIndex);

@@ -2,11 +2,14 @@ using System.Text.RegularExpressions;
 using Bencodex.Types;
 using Lib9c.Models.Market;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Exceptions;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Serilog;
@@ -15,9 +18,10 @@ namespace Mimir.Worker.ActionHandler;
 
 public class ProductsStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
 )
     : BaseActionHandler<ProductsStateDocument>(
         stateService,
@@ -25,7 +29,8 @@ public class ProductsStateHandler(
         headlessGqlClient,
         initializerManager,
         "^register_product[0-9]*$|^cancel_product_registration[0-9]*$|^buy_product[0-9]*$|^re_register_product[0-9]*$",
-        Log.ForContext<ProductsStateHandler>()
+        Log.ForContext<ProductsStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(
@@ -105,7 +110,7 @@ public class ProductsStateHandler(
                 productsStateAddress,
                 productsState,
                 avatarAddress
-            ).ToUpdateOneModel()
+            ).ToUpdateOneModel(),
         ];
     }
 }

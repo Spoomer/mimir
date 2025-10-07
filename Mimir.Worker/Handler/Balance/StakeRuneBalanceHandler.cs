@@ -1,15 +1,28 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using Lib9c;
-using Mimir.Worker.Client;
+using Microsoft.Extensions.Options;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Serilog;
 
 namespace Mimir.Worker.Handler.Balance;
 
 public sealed class StakeRuneBalanceHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager)
-    : BaseBalanceHandler("balance_stake_rune", dbService, stateService, headlessGqlClient, initializerManager,
-        Log.ForContext<StakeRuneBalanceHandler>(), Currencies.StakeRune);
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter
+)
+    : BaseBalanceHandler(
+        "balance_stake_rune",
+        dbService,
+        stateService,
+        headlessGqlClient,
+        initializerManager,
+        stateGetter,
+        Log.ForContext<StakeRuneBalanceHandler>(),
+        Currencies.StakeRune
+    );

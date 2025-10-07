@@ -1,7 +1,7 @@
 using Bencodex.Types;
 using Libplanet.Crypto;
 
-namespace Mimir.Worker.Services;
+namespace Mimir.Shared.Services;
 
 public interface IStateService
 {
@@ -19,4 +19,5 @@ public interface IStateService
         Address accountAddress,
         CancellationToken stoppingToken = default
     );
+    Task<string> GetNCGBalance(Address address, CancellationToken stoppingToken = default);
 }

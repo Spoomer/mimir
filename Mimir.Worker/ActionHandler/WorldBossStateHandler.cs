@@ -1,10 +1,13 @@
 using Bencodex.Types;
 using Lib9c.Models.Exceptions;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Nekoyume;
@@ -16,9 +19,10 @@ namespace Mimir.Worker.ActionHandler;
 
 public class WorldBossStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetterService
 )
     : BaseActionHandler<WorldBossStateDocument>(
         stateService,
@@ -26,7 +30,8 @@ public class WorldBossStateHandler(
         headlessGqlClient,
         initializerManager,
         "^raid[0-9]*$",
-        Log.ForContext<WorldBossStateHandler>()
+        Log.ForContext<WorldBossStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(

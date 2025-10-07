@@ -1,10 +1,13 @@
 using Bencodex.Types;
 using Lib9c.Models.Extensions;
 using Libplanet.Crypto;
+using Microsoft.Extensions.Options;
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
+using Mimir.Shared.Client;
+using Mimir.Shared.Constants;
+using Mimir.Shared.Services;
 using Mimir.Worker.Initializer.Manager;
-using Mimir.Worker.Services;
 using Mimir.Worker.StateDocumentConverter;
 using Nekoyume;
 using Serilog;
@@ -12,10 +15,11 @@ using Serilog;
 namespace Mimir.Worker.Handler;
 
 public sealed class AvatarStateHandler(
-    MongoDbService dbService,
+    IMongoDbService dbService,
     IStateService stateService,
     IHeadlessGQLClient headlessGqlClient,
-    IInitializerManager initializerManager
+    IInitializerManager initializerManager,
+    IStateGetterService stateGetter
 )
     : BaseDiffHandler(
         "avatar",
@@ -25,6 +29,7 @@ public sealed class AvatarStateHandler(
         stateService,
         headlessGqlClient,
         initializerManager,
+        stateGetter,
         Log.ForContext<AvatarStateHandler>()
     )
 {
@@ -32,9 +37,10 @@ public sealed class AvatarStateHandler(
         IStateDocumentConverter converter,
         long blockIndex,
         Address address,
-        IValue rawState)
+        IValue rawState
+    )
     {
-        var inventoryState = await StateGetter.GetInventoryState(address, CancellationToken.None);
+        var inventoryState = await stateGetter.GetInventoryState(address, CancellationToken.None);
         var armorId = inventoryState.GetArmorId();
         var portraitId = inventoryState.GetPortraitId();
 

@@ -1,11 +1,15 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using System.Text.RegularExpressions;
 using Bencodex.Types;
 using Lib9c.Models.Extensions;
 using Lib9c.Models.Items;
 using Lib9c.Models.Market;
 using Libplanet.Crypto;
+
 using Mimir.MongoDB.Bson;
-using Mimir.Worker.Client;
+using Mimir.MongoDB.Services;
 using Mimir.Worker.Exceptions;
 using Mimir.Worker.Initializer.Manager;
 using Mimir.Worker.Services;
@@ -21,10 +25,12 @@ namespace Mimir.Worker.ActionHandler;
 
 public class ProductStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
     IInitializerManager initializerManager,
-    IItemProductCalculationService itemProductCalculationService
+    IItemProductCalculationService itemProductCalculationService,
+    IStateGetterService stateGetterService,
+    PlanetType planetType
 )
     : BaseActionHandler<ProductDocument>(
         stateService,
@@ -32,7 +38,8 @@ public class ProductStateHandler(
         headlessGqlClient,
         initializerManager,
         "^register_product[0-9]*$|^cancel_product_registration[0-9]*$|^buy_product[0-9]*$|^re_register_product[0-9]*$",
-        Log.ForContext<ProductStateHandler>()
+        Log.ForContext<ProductStateHandler>(),
+        stateGetterService
     )
 {
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(
@@ -196,7 +203,7 @@ public class ProductStateHandler(
                 
                 int? crystal = null;
                 int? crystalPerPrice = null;
-                int? combatPoint = null;
+                long? combatPoint = null;
                 try
                 {
                     (crystal, crystalPerPrice) = await itemProductCalculationService.CalculateCrystalMetricsAsync(itemProduct);

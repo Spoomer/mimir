@@ -1,3 +1,6 @@
+using Mimir.Shared.Constants;
+using Mimir.Shared.Client;
+using Mimir.Shared.Services;
 using Bencodex.Types;
 using Libplanet.Crypto;
 using Mimir.MongoDB.Bson;
@@ -15,7 +18,7 @@ public class RaidCpStateDocumentConverter : IStateDocumentConverter
                 $"{nameof(context.RawState)} Invalid state type. Expected {nameof(List)}, got {context.RawState.GetType().Name}."
             );
 
-        var cp = list[0].ToInteger();
+        var cp = list[0].ToLong();
 
         return new RaidCpDocument(context.BlockIndex, context.Address, cp);
     }

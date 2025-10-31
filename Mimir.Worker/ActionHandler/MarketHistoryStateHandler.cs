@@ -18,10 +18,11 @@ namespace Mimir.Worker.ActionHandler;
 
 public class MarketHistoryStateHandler(
     IStateService stateService,
-    MongoDbService store,
+    IMongoDbService store,
     IHeadlessGQLClient headlessGqlClient,
     IInitializerManager initializerManager,
-    IStateGetterService stateGetterService
+    IStateGetterService stateGetterService,
+    IItemProductCalculationService itemProductCalculationService
 )
     : BaseActionHandler<ProductReceiptDocument>(
         stateService,
@@ -33,6 +34,7 @@ public class MarketHistoryStateHandler(
         stateGetterService
     )
 {
+
     protected override async Task<IEnumerable<WriteModel<BsonDocument>>> HandleActionAsync(long blockIndex, Address signer, IValue actionPlainValue, string actionType, IValue? actionPlainValueInternal, IClientSessionHandle? session = null, CancellationToken stoppingToken = default)
     {
         if (actionPlainValueInternal is not Dictionary actionValues)
@@ -55,7 +57,7 @@ public class MarketHistoryStateHandler(
             );
             var product = await StateGetter.GetProductState(productId, stoppingToken, blockIndex);
 
-            var productReceiptDocument = CreateProductReceiptDocumentAsync(blockIndex, avatarAddress, buyerAddress, productsStateAddress, product);
+            var productReceiptDocument = await CreateProductReceiptDocumentAsync(blockIndex, avatarAddress, buyerAddress, productsStateAddress, product);
             ops.Add(productReceiptDocument.ToUpdateOneModel());
         }
 
@@ -63,7 +65,7 @@ public class MarketHistoryStateHandler(
         return ops;
     }
 
-    private ProductDocument CreateProductReceiptDocumentAsync(
+    private async Task<ProductDocument> CreateProductReceiptDocumentAsync(
         long blockIndex,
         Address avatarAddress,
         Address buyerAddress,
@@ -77,30 +79,19 @@ public class MarketHistoryStateHandler(
             case ItemProduct itemProduct:
             {
                 var unitPrice = CalculateUnitPrice(itemProduct);
-                // var combatPoint = await CalculateCombatPointAsync(itemProduct);
-                // var (crystal, crystalPerPrice) = await CalculateCrystalMetricsAsync(itemProduct);
+                var combatPoint = await itemProductCalculationService.CalculateCombatPointAsync(itemProduct);
+                var (crystal, crystalPerPrice) = await itemProductCalculationService.CalculateCrystalMetricsAsync(itemProduct);
 
-                // return new ProductDocument(
-                //     productAddress,
-                //     avatarAddress,
-                //     productsStateAddress,
-                //     product,
-                //     unitPrice,
-                //     combatPoint,
-                //     crystal,
-                //     crystalPerPrice
-                // );
-                return new ProductReceiptDocument(
+                return new ProductDocument(
                     blockIndex,
                     productAddress,
                     avatarAddress,
-                    buyerAddress,
                     productsStateAddress,
                     product,
                     unitPrice,
-                    null,
-                    null,
-                    null
+                    combatPoint,
+                    crystal,
+                    crystalPerPrice
                 );
             }
             case FavProduct favProduct:

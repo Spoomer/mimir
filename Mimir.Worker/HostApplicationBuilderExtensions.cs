@@ -19,46 +19,46 @@ public static class HostApplicationBuilderExtensions
         )
         {
             case PollerType.BlockPoller:
-                builder.Services.AddBackgroundService<BlockHandler>();
+                // builder.Services.AddBackgroundService<BlockHandler>();
                 break;
             case PollerType.TxPoller:
-                builder.Services.AddBackgroundService<ItemSlotStateHandler>();
-                builder.Services.AddBackgroundService<PetStateHandler>();
-                builder.Services.AddBackgroundService<PledgeStateHandler>();
-                builder.Services.AddBackgroundService<ProductsStateHandler>();
-                builder.Services.AddBackgroundService<ProductStateHandler>();
-                builder.Services.AddBackgroundService<RaiderStateHandler>();
-                builder.Services.AddBackgroundService<StakeStateHandler>();
-                builder.Services.AddBackgroundService<RuneSlotStateHandler>();
-                builder.Services.AddBackgroundService<TableSheetStateHandler>();
-                builder.Services.AddBackgroundService<WorldBossKillRewardRecordStateHandler>();
-                builder.Services.AddBackgroundService<WorldBossStateHandler>();
+                // builder.Services.AddBackgroundService<ItemSlotStateHandler>();
+                // builder.Services.AddBackgroundService<PetStateHandler>();
+                // builder.Services.AddBackgroundService<PledgeStateHandler>();
+                // builder.Services.AddBackgroundService<ProductsStateHandler>();
+                // builder.Services.AddBackgroundService<ProductStateHandler>();
+                // builder.Services.AddBackgroundService<RaiderStateHandler>();
+                // builder.Services.AddBackgroundService<StakeStateHandler>();
+                // builder.Services.AddBackgroundService<RuneSlotStateHandler>();
+                // builder.Services.AddBackgroundService<TableSheetStateHandler>();
+                // builder.Services.AddBackgroundService<WorldBossKillRewardRecordStateHandler>();
+                // builder.Services.AddBackgroundService<WorldBossStateHandler>();
                 builder.Services.AddBackgroundService<MarketHistoryStateHandler>();
                 break;
             case PollerType.DiffPoller:
-                builder.Services.AddBackgroundService<ActionPointStateHandler>();
-                builder.Services.AddBackgroundService<AgentStateHandler>();
-                builder.Services.AddBackgroundService<AllCombinationSlotStateHandler>();
-                builder.Services.AddBackgroundService<AllRuneStateHandler>();
-                builder.Services.AddBackgroundService<AvatarStateHandler>();
-                builder.Services.AddBackgroundService<CollectionStateHandler>();
-                builder.Services.AddBackgroundService<DailyRewardStateHandler>();
-                builder.Services.AddBackgroundService<AdventureCpStateHandler>();
-                builder.Services.AddBackgroundService<ArenaCpStateHandler>();
-                // builder.Services.AddBackgroundService<RaidCpStateHandler>();
-                // builder.Services.AddBackgroundService<InventoryStateHandler>();
-                builder.Services.AddBackgroundService<WorldInformationStateHandler>();
-
-                // Balance Handlers
-                builder.Services.AddBackgroundService<CrystalBalanceHandler>();
-                builder.Services.AddBackgroundService<FreyaBlessingRuneBalanceHandler>();
-                builder.Services.AddBackgroundService<FreyaLiberationRuneBalanceHandler>();
-                builder.Services.AddBackgroundService<GarageBalanceHandler>();
-                builder.Services.AddBackgroundService<MeadBalanceHandler>();
-                builder.Services.AddBackgroundService<NcgBalanceHandler>();
-                builder.Services.AddBackgroundService<OdinWeaknessRuneBalanceHandler>();
-                builder.Services.AddBackgroundService<OdinWisdomRuneBalanceHandler>();
-                builder.Services.AddBackgroundService<StakeRuneBalanceHandler>();
+                // builder.Services.AddBackgroundService<ActionPointStateHandler>();
+                // builder.Services.AddBackgroundService<AgentStateHandler>();
+                // builder.Services.AddBackgroundService<AllCombinationSlotStateHandler>();
+                // builder.Services.AddBackgroundService<AllRuneStateHandler>();
+                // builder.Services.AddBackgroundService<AvatarStateHandler>();
+                // builder.Services.AddBackgroundService<CollectionStateHandler>();
+                // builder.Services.AddBackgroundService<DailyRewardStateHandler>();
+                // builder.Services.AddBackgroundService<AdventureCpStateHandler>();
+                // builder.Services.AddBackgroundService<ArenaCpStateHandler>();
+                // // builder.Services.AddBackgroundService<RaidCpStateHandler>();
+                // // builder.Services.AddBackgroundService<InventoryStateHandler>();
+                // builder.Services.AddBackgroundService<WorldInformationStateHandler>();
+                //
+                // // Balance Handlers
+                // builder.Services.AddBackgroundService<CrystalBalanceHandler>();
+                // builder.Services.AddBackgroundService<FreyaBlessingRuneBalanceHandler>();
+                // builder.Services.AddBackgroundService<FreyaLiberationRuneBalanceHandler>();
+                // builder.Services.AddBackgroundService<GarageBalanceHandler>();
+                // builder.Services.AddBackgroundService<MeadBalanceHandler>();
+                // builder.Services.AddBackgroundService<NcgBalanceHandler>();
+                // builder.Services.AddBackgroundService<OdinWeaknessRuneBalanceHandler>();
+                // builder.Services.AddBackgroundService<OdinWisdomRuneBalanceHandler>();
+                // builder.Services.AddBackgroundService<StakeRuneBalanceHandler>();
                 break;
         }
 

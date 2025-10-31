@@ -33,10 +33,10 @@ public class ItemProductCalculationService : IItemProductCalculationService
             {
                 ItemUsable itemUsable => CPHelper.GetCP(
                     (Nekoyume.Model.Item.ItemUsable)
-                        Nekoyume.Model.Item.ItemFactory.Deserialize((Dictionary)itemUsable.Bencoded)
+                        Nekoyume.Model.Item.ItemFactory.Deserialize(itemUsable.Bencoded)
                 ),
                 Costume costume => CPHelper.GetCP(
-                    new Nekoyume.Model.Item.Costume((Dictionary)costume.Bencoded),
+                    new Nekoyume.Model.Item.Costume(costume.Bencoded),
                     costumeStatSheet
                 ),
                 _ => null,

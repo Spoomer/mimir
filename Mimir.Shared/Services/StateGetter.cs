@@ -1,7 +1,6 @@
 using System.Numerics;
 using Bencodex.Types;
 using Lib9c.Models.Items;
-using Lib9c.Models.Market;
 using Lib9c.Models.States;
 using Libplanet.Action.State;
 using Libplanet.Crypto;
@@ -13,6 +12,8 @@ using Nekoyume;
 using Nekoyume.Action;
 using Nekoyume.Model.EnumType;
 using Nekoyume.TableData;
+using Product = Lib9c.Models.Market.Product;
+using ProductsState = Lib9c.Models.Market.ProductsState;
 
 namespace Mimir.Shared.Services;
 
@@ -192,11 +193,11 @@ public class StateGetterService : IStateGetterService
 
     public async Task<Product> GetProductState(
         Guid productId,
-        CancellationToken stoppingToken = default
-    )
+        CancellationToken stoppingToken = default,
+        long? blockIndex = null)
     {
         var productAddress = Nekoyume.Model.Market.Product.DeriveAddress(productId);
-        var state = await _service.GetState(productAddress, stoppingToken);
+        var state = await _service.GetState(productAddress, stoppingToken, blockIndex);
         return state switch
         {
             null => throw new StateNotFoundException(productAddress, typeof(Product)),

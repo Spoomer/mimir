@@ -26,18 +26,43 @@ public record ItemUsable : ItemBase
     public long RequiredBlockIndex { get; init; }
 
     [BsonIgnore, GraphQLIgnore, JsonIgnore]
-    public override IValue Bencoded => ((Dictionary)base.Bencoded)
-        .Add("itemId", ItemId.Serialize())
-        .Add("statsMap", StatsMap.Bencoded)
-        .Add("skills", new List(Skills
-            .OrderByDescending(i => i.Chance)
-            .ThenByDescending(i => i.Power)
-            .Select(s => s.Bencoded)))
-        .Add("buffSkills", new List(BuffSkills
-            .OrderByDescending(i => i.Chance)
-            .ThenByDescending(i => i.Power)
-            .Select(s => s.Bencoded)))
-        .Add("requiredBlockIndex", RequiredBlockIndex.Serialize());
+    public override IValue Bencoded
+    {
+        get
+        {
+            switch (base.Bencoded)
+            {
+                case Dictionary dictionary:
+                    return dictionary
+                        .Add("itemId", ItemId.Serialize())
+                        .Add("statsMap", StatsMap.Bencoded)
+                        .Add("skills", new List(Skills
+                            .OrderByDescending(i => i.Chance)
+                            .ThenByDescending(i => i.Power)
+                            .Select(s => s.Bencoded)))
+                        .Add("buffSkills", new List(BuffSkills
+                            .OrderByDescending(i => i.Chance)
+                            .ThenByDescending(i => i.Power)
+                            .Select(s => s.Bencoded)))
+                        .Add("requiredBlockIndex", RequiredBlockIndex.Serialize());
+                case List list:
+                    return list
+                        .Add(ItemId.Serialize())
+                        .Add(StatsMap.Bencoded)
+                        .Add(new List(Skills
+                            .OrderByDescending(i => i.Chance)
+                            .ThenByDescending(i => i.Power)
+                            .Select(s => s.Bencoded)))
+                        .Add(new List(BuffSkills
+                            .OrderByDescending(i => i.Chance)
+                            .ThenByDescending(i => i.Power)
+                            .Select(s => s.Bencoded)))
+                        .Add(RequiredBlockIndex.Serialize());
+                default:
+                    throw new InvalidCastException();
+            }
+        }
+    }
 
     public ItemUsable()
     {

@@ -41,7 +41,7 @@ public interface IStateGetterService
         Address avatarAddress,
         CancellationToken stoppingToken = default
     );
-    Task<Product> GetProductState(Guid productId, CancellationToken stoppingToken = default);
+    Task<Product> GetProductState(Guid productId, CancellationToken stoppingToken = default, long? blockIndex = null);
     Task<Nekoyume.Model.State.MarketState> GetMarketState(
         CancellationToken stoppingToken = default
     );

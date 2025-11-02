@@ -129,6 +129,8 @@ namespace Mimir.MongoDB
                 "world_boss_kill_reward_record");
             CollectionAndStateTypeMappings.Add(typeof(WorldInformationDocument), "world_information");
             CollectionAndStateTypeMappings.Add(typeof(StakeDocument), "stake");
+            CollectionAndStateTypeMappings.Add(typeof(ProductReceiptDocument), "product_receipt");
+
         }
 
         public static string GetCollectionName<T>()

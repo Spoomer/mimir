@@ -30,30 +30,20 @@ public record Skill : IBencodable
     {
         get
         {
-            var d = Dictionary.Empty
-                .Add("skillRow", SkillRow.Serialize())
-                .Add("power", Power.Serialize())
-                .Add("chance", Chance.Serialize());
+
+            var list = List.Empty
+                .Add(SkillRow.Serialize())
+                .Add(Power.Serialize())
+                .Add(Chance.Serialize());
 
             if (StatPowerRatio != default && ReferencedStatType != StatType.NONE)
             {
-                d = d
-                    .Add("stat_power_ratio", StatPowerRatio.Serialize())
-                    .Add("referenced_stat_type", ReferencedStatType.Serialize());
+                list = list
+                    .Add(StatPowerRatio.Serialize())
+                    .Add(ReferencedStatType.Serialize());
             }
 
-            if (!_skillRowHasCombo)
-            {
-                var skillRow = (Dictionary)d["skillRow"];
-                if (skillRow.ContainsKey("combo"))
-                {
-                    skillRow = new Dictionary(skillRow.Remove((Text)"combo"));
-                }
-
-                d = d.SetItem("skillRow", skillRow);
-            }
-
-            return d;
+            return list;
         }
     }
 
